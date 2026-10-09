@@ -34,6 +34,9 @@ class UltrasonicProximitySensor {
          */
         UltrasonicProximitySensor(int pin_trigger, int pin_echo);
 
+        // Configurare i pin in setup(), dopo l'inizializzazione del runtime Arduino.
+        void begin();
+
         /*!
          * \brief setMaximumDistanceToCheckInCm Set a maximum distance to prevent getting false positive values
          *

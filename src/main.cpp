@@ -1,26 +1,55 @@
 #include <Arduino.h>
-#include <UltrasonicProximitySensor.h>
-#include <configuration.h>
+#include "ChristmasMusic.h"
+#include "ProximityTrigger.h"
+#include "ShowController.h"
+#include "UltrasonicProximitySensor.h"
+#include "configuration.h"
 
-static UltrasonicProximitySensor proximitySensor(TRIGGER_PIN, ECHO_PIN);
+namespace {
+    UltrasonicProximitySensor proximitySensor(Configuration::TriggerPin, Configuration::EchoPin);
+    ProximityTrigger proximityTrigger;
+    ShowController show;
+    uint32_t lastSensorPollMs = 0;
+}
 
 void setup() {
-    Serial.begin(9600);
-    pinMode(13, OUTPUT);
-    proximitySensor.setMaximumDistanceToCheckInCm(100);
+    Serial.begin(Configuration::SerialBaudRate);
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
+
+    proximitySensor.begin();
+    proximitySensor.setMaximumDistanceToCheckInCm(Configuration::SensorMaximumDistanceCm);
+    show.begin();
+    lastSensorPollMs = millis();
+
+    Serial.println(F("[Presepe] Pronto. Avvicinarsi per avviare lo spettacolo."));
 }
 
 void loop() {
-    unsigned long distance = proximitySensor.getDistanceInCm();
+    const uint32_t nowMs = millis();
+    const bool wasRunning = show.isRunning();
+    show.update(nowMs);
 
-    if (distance > 0 && distance < 50) {
-        Serial.println("[ALERT] Ti sei avvicinato troppo! " + String(distance) + "cm");
-        digitalWrite(13, HIGH);
-    }
-    else if (distance >= 50 && distance < 100) {
-        Serial.println("[ALERT] Stammi alla larga! " + String(distance) + "cm");
+    if (wasRunning && !show.isRunning()) {
+        digitalWrite(LED_BUILTIN, LOW);
+        Serial.println(F("[Presepe] Spettacolo terminato. Allontanarsi per riarmare il sensore."));
     }
 
-    delay(250);
-    digitalWrite(13, LOW);
+    // Il sensore usa pulseIn(): lo leggiamo soltanto a riproduzione inattiva,
+    // così la breve attesa dell'eco non rallenta gli aggiornamenti dei componenti.
+    if (show.isRunning() || static_cast<uint32_t>(nowMs - lastSensorPollMs) < Configuration::SensorPollIntervalMs) {
+        return;
+    }
+
+    lastSensorPollMs = nowMs;
+    const unsigned long distanceCm = proximitySensor.getDistanceInCm();
+    if (proximityTrigger.update(distanceCm) && show.start(millis())) {
+        digitalWrite(LED_BUILTIN, HIGH);
+        if (ChristmasMusic::currentSong() == ChristmasMusic::Song::JingleBells) {
+            Serial.println(F("[Presepe] Avvio: Jingle Bells, stella cometa e luci."));
+        }
+        else {
+            Serial.println(F("[Presepe] Avvio: Tu scendi dalle stelle, stella cometa e luci."));
+        }
+    }
 }

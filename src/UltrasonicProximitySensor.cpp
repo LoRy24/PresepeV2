@@ -16,10 +16,13 @@ UltrasonicProximitySensor::UltrasonicProximitySensor(int pin_trigger, int pin_ec
     _pin_trigger = pin_trigger;
     _pin_echo = pin_echo;
 
+    setMaximumDistanceToCheckInCm(DEFAULT_MAX_DISTANCE_IN_CM);
+}
+
+void UltrasonicProximitySensor::begin() {
     pinMode(_pin_trigger, OUTPUT);
     pinMode(_pin_echo, INPUT);
-
-    setMaximumDistanceToCheckInCm(DEFAULT_MAX_DISTANCE_IN_CM);
+    digitalWrite(_pin_trigger, LOW);
 }
 
 bool UltrasonicProximitySensor::setMaximumDistanceToCheckInCm(unsigned long max_distance_in_cm) {
@@ -43,15 +46,14 @@ unsigned long UltrasonicProximitySensor::getMaximumDistanceToCheckInCm() const {
 }
 
 unsigned long UltrasonicProximitySensor::getDistanceInCm() const {
-    unsigned long ditance_in_cm = 0;
     sendTrigger();
-    ditance_in_cm = waitEcho();
+    const unsigned long distance_in_cm = waitEcho();
 
-    if (ditance_in_cm <= 0 || ditance_in_cm > _max_distance_in_cm) {
+    if (distance_in_cm == 0 || distance_in_cm > _max_distance_in_cm) {
         return 0;
     }
 
-    return ditance_in_cm;
+    return distance_in_cm;
 }
 
 ////////////////////////////////PRIVATE FUNCTIONS//////////////////////////////
