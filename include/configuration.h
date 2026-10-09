@@ -1,0 +1,11 @@
+//
+// Created by Lorenzo Rocca on 09/10/2026.
+//
+
+#ifndef PRESEPEV2_CONFIGURATION_H
+#define PRESEPEV2_CONFIGURATION_H
+
+#define TRIGGER_PIN 2
+#define ECHO_PIN 3
+
+#endif //PRESEPEV2_CONFIGURATION_H
